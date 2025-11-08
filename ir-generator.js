@@ -23,13 +23,22 @@ class IRGenerator {
         if (modulated) {
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
             const onSamples = Math.floor(carrierPeriod * this.dutyCycle);
+            const amplitude = 0.8;
 
             for (let i = 0; i < samples; i++) {
                 const carrierPosition = i % carrierPeriod;
-                pulse[i] = carrierPosition < onSamples ? 0.8 : 0;
+                // Create bipolar AC signal: oscillates between -amplitude and +amplitude
+                // This is proper for audio outputs which are AC-coupled
+                if (carrierPosition < onSamples) {
+                    // High phase: positive voltage
+                    pulse[i] = amplitude;
+                } else {
+                    // Low phase: negative voltage (creates proper AC waveform)
+                    pulse[i] = -amplitude;
+                }
             }
         } else {
-            // Space (silence)
+            // Space (silence) - stay at 0V
             pulse.fill(0);
         }
 
