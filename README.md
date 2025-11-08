@@ -39,13 +39,13 @@ Audio Jack → [Capacitor] → [Resistor] → IR LED → Ground
 
 ### Online
 
-Visit the live demo: [https://yourusername.github.io/BrowserAudioIRBlaster](https://yourusername.github.io/BrowserAudioIRBlaster)
+Visit the live demo: [https://rinthlabs.github.io/BrowserAudioIRBlaster](https://rinthlabs.github.io/BrowserAudioIRBlaster)
 
 ### Local Development
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/BrowserAudioIRBlaster.git
+   git clone https://github.com/RinthLabs/BrowserAudioIRBlaster.git
    cd BrowserAudioIRBlaster
    ```
 
@@ -115,8 +115,8 @@ This project is open source and available under the MIT License.
 ## Support
 
 If you find this project useful, please consider supporting:
-- [PayPal Donate](https://www.paypal.com/donate)
-- [GitHub Sponsors](https://github.com/sponsors)
+- [PayPal Donate](https://www.paypal.com/donate/?hosted_button_id=7R4HTK3M4WMPS)
+- [GitHub Sponsors](https://github.com/sponsors/BenRinthLabs)
 
 ## Disclaimer
 
