@@ -170,6 +170,57 @@
         .brand-tabs .indicator {
             background-color: #667eea;
         }
+
+        .brand-dropdown {
+            display: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .brand-dropdown select {
+            display: inline-block;
+            padding: 12px 40px 12px 15px;
+            font-size: 16px;
+            line-height: 1.5;
+            height: auto;
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            background-color: white;
+            color: #667eea;
+            font-weight: 500;
+            cursor: pointer;
+            max-width: 300px;
+            width: 90%;
+            box-sizing: border-box;
+        }
+
+        .brand-dropdown select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Mobile: Show dropdown, hide tabs */
+        @media only screen and (max-width: 600px) {
+            .brand-tabs .tabs {
+                display: none !important;
+            }
+
+            .brand-dropdown {
+                display: block;
+            }
+        }
+
+        /* Desktop: Show tabs, hide dropdown */
+        @media only screen and (min-width: 601px) {
+            .brand-tabs .tabs {
+                display: flex !important;
+            }
+
+            .brand-dropdown {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -190,7 +241,7 @@
                         {{ brands[selectedBrand].name }} Remote
                     </span>
 
-                    <!-- Brand Selection Tabs -->
+                    <!-- Brand Selection Tabs (Desktop) -->
                     <div class="brand-tabs">
                         <ul class="tabs">
                             <li class="tab" v-for="(brand, key) in brands" :key="key">
@@ -201,6 +252,15 @@
                                 </a>
                             </li>
                         </ul>
+                    </div>
+
+                    <!-- Brand Selection Dropdown (Mobile) -->
+                    <div class="brand-dropdown">
+                        <select v-model="selectedBrand" class="browser-default">
+                            <option v-for="(brand, key) in brands" :key="key" :value="key">
+                                {{ brand.name }}
+                            </option>
+                        </select>
                     </div>
 
                     <div class="remote-grid">
