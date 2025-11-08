@@ -198,3 +198,128 @@ const LG_TV_CODES = {
     right: 0x20DF609F,
     ok: 0x20DF22DD
 };
+
+// Samsung TV NEC codes (Address: 0x07)
+const SAMSUNG_TV_CODES = {
+    power: 0x0707E0E040BF,
+    num0: 0x0707E0E08877,
+    num1: 0x0707E0E020DF,
+    num2: 0x0707E0E0A05F,
+    num3: 0x0707E0E0609F,
+    num4: 0x0707E0E010EF,
+    num5: 0x0707E0E0906F,
+    num6: 0x0707E0E050AF,
+    num7: 0x0707E0E030CF,
+    num8: 0x0707E0E0B04F,
+    num9: 0x0707E0E0708F,
+    volUp: 0x0707E0E0E01F,
+    volDown: 0x0707E0E0D02F,
+    chUp: 0x0707E0E048B7,
+    chDown: 0x0707E0E008F7,
+    mute: 0x0707E0E0F00F,
+    input: 0x0707E0E0807F,
+    menu: 0x0707E0E058A7,
+    back: 0x0707E0E01AE5,
+    home: 0x0707E0E079867,
+    up: 0x0707E0E006F9,
+    down: 0x0707E0E08679,
+    left: 0x0707E0E0A659,
+    right: 0x0707E0E046B9,
+    ok: 0x0707E0E016E9
+};
+
+// Sony TV NEC codes (Address: 0x01) - Some Sony models support NEC
+const SONY_TV_CODES = {
+    power: 0x0101A90B750A,
+    num0: 0x0101A90B09F6,
+    num1: 0x0101A90B00FF,
+    num2: 0x0101A90B807F,
+    num3: 0x0101A90B40BF,
+    num4: 0x0101A90BC03F,
+    num5: 0x0101A90B20DF,
+    num6: 0x0101A90BA05F,
+    num7: 0x0101A90B609F,
+    num8: 0x0101A90BE01F,
+    num9: 0x0101A90B10EF,
+    volUp: 0x0101A90B490B,
+    volDown: 0x0101A90BC906,
+    chUp: 0x0101A90B090F,
+    chDown: 0x0101A90B8906,
+    mute: 0x0101A90B290D,
+    input: 0x0101A90BA50A,
+    menu: 0x0101A90B070F,
+    back: 0x0101A90B62F9,
+    home: 0x0101A90B070F,
+    up: 0x0101A90B2BD4,
+    down: 0x0101A90BABD4,
+    left: 0x0101A90B2DD2,
+    right: 0x0101A90BCDD2,
+    ok: 0x0101A90BA50A
+};
+
+// Vizio TV NEC codes (Address: 0x04)
+const VIZIO_TV_CODES = {
+    power: 0x0404FB08F7,
+    num0: 0x0404FB827D,
+    num1: 0x0404FB02FD,
+    num2: 0x0404FB42BD,
+    num3: 0x0404FBC23D,
+    num4: 0x0404FB22DD,
+    num5: 0x0404FBA25D,
+    num6: 0x0404FB629D,
+    num7: 0x0404FBE21D,
+    num8: 0x0404FB12ED,
+    num9: 0x0404FB926D,
+    volUp: 0x0404FB40BF,
+    volDown: 0x0404FBC03F,
+    chUp: 0x0404FB00FF,
+    chDown: 0x0404FB807F,
+    mute: 0x0404FB906F,
+    input: 0x0404FB2AD5,
+    menu: 0x0404FB8A75,
+    back: 0x0404FB5AA5,
+    home: 0x0404FB6A95,
+    up: 0x0404FB1AE5,
+    down: 0x0404FB9A65,
+    left: 0x0404FBDA25,
+    right: 0x0404FB3AC5,
+    ok: 0x0404FBAA55
+};
+
+// TCL/Roku TV NEC codes (Address: 0x08)
+const TCL_TV_CODES = {
+    power: 0x0808F708F7,
+    num0: 0x0808F7C03F,
+    num1: 0x0808F720DF,
+    num2: 0x0808F7A05F,
+    num3: 0x0808F7609F,
+    num4: 0x0808F7E01F,
+    num5: 0x0808F710EF,
+    num6: 0x0808F7906F,
+    num7: 0x0808F750AF,
+    num8: 0x0808F7D02F,
+    num9: 0x0808F730CF,
+    volUp: 0x0808F740BF,
+    volDown: 0x0808F7C837,
+    chUp: 0x0808F700FF,
+    chDown: 0x0808F7807F,
+    mute: 0x0808F7B04F,
+    input: 0x0808F72CD3,
+    menu: 0x0808F7CC33,
+    back: 0x0808F76C93,
+    home: 0x0808F79C63,
+    up: 0x0808F7A857,
+    down: 0x0808F728D7,
+    left: 0x0808F76897,
+    right: 0x0808F7E817,
+    ok: 0x0808F748B7
+};
+
+// All remote codes organized by brand
+const TV_REMOTES = {
+    lg: { name: 'LG', codes: LG_TV_CODES },
+    samsung: { name: 'Samsung', codes: SAMSUNG_TV_CODES },
+    sony: { name: 'Sony', codes: SONY_TV_CODES },
+    vizio: { name: 'Vizio', codes: VIZIO_TV_CODES },
+    tcl: { name: 'TCL/Roku', codes: TCL_TV_CODES }
+};

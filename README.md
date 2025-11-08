@@ -4,11 +4,11 @@
 
 # Browser Audio IR Blaster
 
-A web-based infrared remote control that generates IR signals as audio output. Control your LG TV (and potentially other devices) using your browser's audio output connected to an IR LED circuit.
+A web-based infrared remote control that generates IR signals as audio output. Control your TV using your browser's audio output connected to an IR LED circuit.
 
 ## Features
 
-- **LG TV Remote Control**: Pre-programmed buttons for common LG TV functions
+- **Multiple TV Brands**: Pre-programmed remotes for LG, Samsung, Sony, Vizio, and TCL/Roku TVs
 - **Custom Commands**: Send any IR command by entering hex codes
 - **Adjustable Frequency**: Set carrier frequency (default 38 kHz for most TVs)
 - **Audio Playback**: Play IR signals through your device's speaker/audio output
@@ -72,13 +72,19 @@ Example: `0x20DF10EF`
 
 ## Supported Devices
 
-Currently pre-configured for:
+Currently pre-configured for the top TV brands:
 - **LG TVs** (NEC protocol, address 0x20)
+- **Samsung TVs** (NEC protocol, address 0x07)
+- **Sony TVs** (NEC protocol, address 0x01) - Note: Some Sony models use SIRC protocol
+- **Vizio TVs** (NEC protocol, address 0x04)
+- **TCL/Roku TVs** (NEC protocol, address 0x08)
+
+Simply select your TV brand from the tabs and use the remote!
 
 You can add support for other devices by:
-1. Finding the device's IR codes
-2. Adding them to the `LG_TV_CODES` object in `ir-generator.js`
-3. Or using the custom command feature
+1. Finding the device's IR codes (must be NEC protocol)
+2. Adding them to `ir-generator.js`
+3. Or using the custom command feature for one-off commands
 
 ## Technical Details
 

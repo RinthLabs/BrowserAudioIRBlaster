@@ -8,6 +8,7 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
+            selectedBrand: 'lg',
             customCode: '0x20DF10EF',
             frequency: 38,
             lastCommand: '',
@@ -15,7 +16,8 @@ createApp({
             audioBlob: null,
             irGenerator: null,
             audioContext: null,
-            debugInfo: null
+            debugInfo: null,
+            brands: TV_REMOTES
         };
     },
 
@@ -46,18 +48,20 @@ createApp({
          */
         sendCommand(commandName) {
             try {
-                const hexCode = LG_TV_CODES[commandName];
+                const brandCodes = this.brands[this.selectedBrand].codes;
+                const hexCode = brandCodes[commandName];
                 if (!hexCode) {
                     M.toast({ html: 'Command not found!', classes: 'red' });
                     return;
                 }
 
+                const brandName = this.brands[this.selectedBrand].name;
                 this.lastCommand = commandName.toUpperCase();
                 const hexString = '0x' + hexCode.toString(16).toUpperCase();
 
-                console.log(`Sending command: ${commandName} (${hexString})`);
+                console.log(`Sending ${brandName} command: ${commandName} (${hexString})`);
 
-                this.generateAndPlay(hexCode, commandName.toUpperCase());
+                this.generateAndPlay(hexCode, `${brandName} ${commandName.toUpperCase()}`);
 
                 M.toast({
                     html: `<i class="material-icons left">check</i>Sent: ${commandName}`,

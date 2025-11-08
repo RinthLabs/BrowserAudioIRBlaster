@@ -145,6 +145,31 @@
         .btn-flat {
             color: #667eea;
         }
+
+        .brand-tabs .tabs {
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .brand-tabs .tab a {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .brand-tabs .tab a:hover {
+            color: #764ba2;
+        }
+
+        .brand-tabs .tab a.active {
+            color: #667eea;
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .brand-tabs .indicator {
+            background-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -154,16 +179,29 @@
             <div class="card header-card">
                 <img src="logo.png" alt="Browser Audio IR Blaster Logo" class="logo">
                 <h4>Browser Audio IR Blaster</h4>
-                <p>Control your LG TV using infrared audio signals</p>
+                <p>Control your TV using infrared audio signals</p>
             </div>
 
-            <!-- LG TV Remote -->
+            <!-- TV Remote Control -->
             <div class="card" style="margin-top: 20px;">
                 <div class="card-content">
                     <span class="card-title center-align">
                         <i class="material-icons" style="vertical-align: middle;">tv</i>
-                        LG TV Remote
+                        {{ brands[selectedBrand].name }} Remote
                     </span>
+
+                    <!-- Brand Selection Tabs -->
+                    <div class="brand-tabs">
+                        <ul class="tabs">
+                            <li class="tab" v-for="(brand, key) in brands" :key="key">
+                                <a href="#"
+                                   @click.prevent="selectedBrand = key"
+                                   :class="{ active: selectedBrand === key }">
+                                    {{ brand.name }}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
                     <div class="remote-grid">
                         <!-- Power Button -->
