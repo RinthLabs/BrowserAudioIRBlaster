@@ -279,21 +279,28 @@ createApp({
 
                 // Set color based on section
                 ctx.strokeStyle = section.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
+                ctx.lineWidth = 1.5;
 
-                // Get max value in this pixel's range
+                // Get min and max values in this pixel's range to show full AC waveform
+                let minVal = 0;
                 let maxVal = 0;
                 for (let i = 0; i < samplesPerPixel && sampleIndex + i < signal.length; i++) {
-                    maxVal = Math.max(maxVal, Math.abs(signal[sampleIndex + i]));
+                    const sample = signal[sampleIndex + i];
+                    minVal = Math.min(minVal, sample);
+                    maxVal = Math.max(maxVal, sample);
                 }
 
-                const voltage = maxVal * voltageRange;
-                const y = margin.top + plotHeight / 2 - (voltage / voltageRange) * (plotHeight / 2);
+                // Convert to screen coordinates
+                const centerY = margin.top + plotHeight / 2;
+                const yMax = centerY - (maxVal * (plotHeight / 2));
+                const yMin = centerY - (minVal * (plotHeight / 2));
 
                 const plotX = margin.left + x;
-                ctx.moveTo(plotX, margin.top + plotHeight / 2);
-                ctx.lineTo(plotX, y);
+
+                // Draw vertical line from min to max to show voltage range at this time
+                ctx.beginPath();
+                ctx.moveTo(plotX, yMax);
+                ctx.lineTo(plotX, yMin);
                 ctx.stroke();
             }
 
