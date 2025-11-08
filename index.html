@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser Audio IR Blaster</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="logo.png">
+
+    <!-- Material Design CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header-card {
+            background: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header-card h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+
+        .logo {
+            max-width: 80px;
+            height: auto;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .remote-button {
+            margin: 5px;
+            min-width: 70px;
+            height: 50px;
+        }
+
+        .power-btn {
+            background-color: #f44336 !important;
+        }
+
+        .number-btn {
+            background-color: #2196F3 !important;
+        }
+
+        .nav-btn {
+            background-color: #4CAF50 !important;
+        }
+
+        .vol-btn {
+            background-color: #FF9800 !important;
+        }
+
+        .special-btn {
+            background-color: #9C27B0 !important;
+        }
+
+        .ok-btn {
+            background-color: #00BCD4 !important;
+            border-radius: 50% !important;
+            width: 60px !important;
+            height: 60px !important;
+        }
+
+        .footer-links {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .donate-btn {
+            margin: 10px;
+        }
+
+        .github-link {
+            color: white;
+            margin-top: 20px;
+            display: block;
+            text-align: center;
+        }
+
+        .remote-grid {
+            display: grid;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        .nav-pad {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left ok right"
+                ". down .";
+            gap: 10px;
+            max-width: 250px;
+            margin: 20px auto;
+        }
+
+        .nav-up { grid-area: up; }
+        .nav-down { grid-area: down; }
+        .nav-left { grid-area: left; }
+        .nav-right { grid-area: right; }
+        .nav-ok { grid-area: ok; justify-self: center; align-self: center; }
+
+        .control-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .input-field input {
+            color: #333;
+        }
+
+        .btn-flat {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- Header -->
+            <div class="card header-card">
+                <img src="logo.png" alt="Browser Audio IR Blaster Logo" class="logo">
+                <h4>Browser Audio IR Blaster</h4>
+                <p>Control your LG TV using infrared audio signals</p>
+            </div>
+
+            <!-- LG TV Remote -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-content">
+                    <span class="card-title center-align">
+                        <i class="material-icons" style="vertical-align: middle;">tv</i>
+                        LG TV Remote
+                    </span>
+
+                    <div class="remote-grid">
+                        <!-- Power Button -->
+                        <div class="control-row">
+                            <button class="btn waves-effect waves-light remote-button power-btn" @click="sendCommand('power')">
+                                <i class="material-icons">power_settings_new</i>
+                            </button>
+                        </div>
+
+                        <!-- Number Pad -->
+                        <div class="number-pad">
+                            <button v-for="n in 9" :key="n" class="btn waves-effect waves-light remote-button number-btn" @click="sendCommand('num' + n)">
+                                {{ n }}
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button special-btn" @click="sendCommand('mute')">
+                                <i class="material-icons">volume_off</i>
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button number-btn" @click="sendCommand('num0')">
+                                0
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button special-btn" @click="sendCommand('input')">
+                                INPUT
+                            </button>
+                        </div>
+
+                        <!-- Volume & Channel -->
+                        <div class="control-row">
+                            <button class="btn waves-effect waves-light remote-button vol-btn" @click="sendCommand('volUp')">
+                                VOL+
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button vol-btn" @click="sendCommand('volDown')">
+                                VOL-
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button vol-btn" @click="sendCommand('chUp')">
+                                CH+
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button vol-btn" @click="sendCommand('chDown')">
+                                CH-
+                            </button>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="nav-pad">
+                            <button class="btn waves-effect waves-light remote-button nav-btn nav-up" @click="sendCommand('up')">
+                                <i class="material-icons">keyboard_arrow_up</i>
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button nav-btn nav-left" @click="sendCommand('left')">
+                                <i class="material-icons">keyboard_arrow_left</i>
+                            </button>
+                            <button class="btn waves-effect waves-light ok-btn nav-ok" @click="sendCommand('ok')">
+                                OK
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button nav-btn nav-right" @click="sendCommand('right')">
+                                <i class="material-icons">keyboard_arrow_right</i>
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button nav-btn nav-down" @click="sendCommand('down')">
+                                <i class="material-icons">keyboard_arrow_down</i>
+                            </button>
+                        </div>
+
+                        <!-- Menu & Back -->
+                        <div class="control-row">
+                            <button class="btn waves-effect waves-light remote-button special-btn" @click="sendCommand('menu')">
+                                MENU
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button special-btn" @click="sendCommand('back')">
+                                BACK
+                            </button>
+                            <button class="btn waves-effect waves-light remote-button special-btn" @click="sendCommand('home')">
+                                <i class="material-icons">home</i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Command -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-content">
+                    <span class="card-title">
+                        <i class="material-icons" style="vertical-align: middle;">settings</i>
+                        Custom Command
+                    </span>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input id="custom-code" type="text" v-model="customCode" placeholder="e.g., 0x20DF10EF">
+                            <label for="custom-code" class="active">IR Command Code (Hex)</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            <input id="frequency" type="number" v-model.number="frequency" min="30" max="60">
+                            <label for="frequency" class="active">Carrier Frequency (kHz)</label>
+                        </div>
+                    </div>
+
+                    <div class="center-align">
+                        <button class="btn waves-effect waves-light" @click="sendCustomCommand">
+                            <i class="material-icons left">send</i>
+                            Send Custom Command
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Playback & Debug -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-content">
+                    <span class="card-title center-align">
+                        <i class="material-icons" style="vertical-align: middle;">audiotrack</i>
+                        Audio Playback & Debug
+                    </span>
+
+                    <!-- Debug Information -->
+                    <div v-if="debugInfo" style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 15px 0; text-align: left;">
+                        <h6 style="margin-top: 0; color: #667eea;">
+                            <i class="material-icons tiny" style="vertical-align: middle;">info</i>
+                            Signal Details
+                        </h6>
+                        <table style="width: 100%; font-size: 0.9em;">
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Command:</strong></td>
+                                    <td style="padding: 4px 8px;">{{ debugInfo.commandName }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Hex Code:</strong></td>
+                                    <td style="padding: 4px 8px; font-family: monospace;">{{ debugInfo.hexCode }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Address:</strong></td>
+                                    <td style="padding: 4px 8px; font-family: monospace;">{{ debugInfo.address }} ({{ debugInfo.addressHex }})</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Command Byte:</strong></td>
+                                    <td style="padding: 4px 8px; font-family: monospace;">{{ debugInfo.command }} ({{ debugInfo.commandHex }})</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Protocol:</strong></td>
+                                    <td style="padding: 4px 8px;">{{ debugInfo.protocol }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Carrier Freq:</strong></td>
+                                    <td style="padding: 4px 8px;">{{ debugInfo.carrierFreq }} kHz</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Sample Rate:</strong></td>
+                                    <td style="padding: 4px 8px;">{{ debugInfo.sampleRate }} Hz</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Duration:</strong></td>
+                                    <td style="padding: 4px 8px;">{{ debugInfo.duration }} ms</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 4px 8px;"><strong>Total Bits:</strong></td>
+                                    <td style="padding: 4px 8px;">32 bits (Address + ~Address + Command + ~Command)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="center-align">
+                        <audio ref="audioPlayer" controls style="width: 100%; max-width: 500px; margin-top: 10px;"></audio>
+                        <br><br>
+                        <button class="btn waves-effect waves-light" @click="downloadAudio" :disabled="!audioUrl">
+                            <i class="material-icons left">download</i>
+                            Download Audio File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Section -->
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-content center-align">
+                    <span class="card-title">Support This Project</span>
+                    <p>This is open source software. If you find it useful, please consider supporting!</p>
+
+                    <div class="footer-links">
+                        <a href="https://www.paypal.com/donate" target="_blank" class="btn waves-effect waves-light donate-btn blue">
+                            <i class="material-icons left">payment</i>
+                            PayPal Donate
+                        </a>
+                        <a href="https://github.com/sponsors" target="_blank" class="btn waves-effect waves-light donate-btn pink">
+                            <i class="material-icons left">favorite</i>
+                            GitHub Sponsors
+                        </a>
+                    </div>
+
+                    <a href="https://github.com/yourusername/BrowserAudioIRBlaster" target="_blank" class="github-link">
+                        <i class="material-icons" style="vertical-align: middle;">code</i>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- IR Signal Generation -->
+    <script src="ir-generator.js"></script>
+
+    <!-- Main App -->
+    <script src="app.js"></script>
+</body>
+</html>
