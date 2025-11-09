@@ -116,9 +116,10 @@ createApp({
          * Generate and play IR audio signal
          */
         generateAndPlay(hexCode, commandName = 'Custom') {
-            // Extract address and command from hex code
-            const address = (hexCode >> 24) & 0xFF;
-            const command = (hexCode >> 8) & 0xFF;
+            // Extract address and command from hex code (NEC format: AA BB CC DD where AA=addr, BB=~addr, CC=cmd, DD=~cmd)
+            // Arduino IR library format: bits 0-7=Address, 8-15=~Address, 16-23=Command, 24-31=~Command
+            const address = hexCode & 0xFF;
+            const command = (hexCode >> 16) & 0xFF;
 
             console.log(`Address: 0x${address.toString(16).toUpperCase()}, Command: 0x${command.toString(16).toUpperCase()}`);
 
