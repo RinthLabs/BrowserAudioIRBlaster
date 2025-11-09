@@ -21,9 +21,16 @@ class IRGenerator {
         const pulse = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: use DC HIGH level (+1.5V equivalent in normalized range)
-            // The 38kHz carrier modulation may be added by external circuitry or the IR LED itself
-            pulse.fill(0.9); // ~1.5V normalized to ±1.0V range
+            // IR burst: DC offset (+0.9 ≈ +1.5V) with 38kHz carrier wave on top
+            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+            const dcOffset = 0.9; // +1.5V DC level
+            const carrierAmplitude = 0.3; // Amplitude of the carrier wave on top of DC
+
+            for (let i = 0; i < samples; i++) {
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const carrier = Math.sin(phase) * carrierAmplitude;
+                pulse[i] = dcOffset + carrier; // DC offset + AC carrier
+            }
         } else {
             // Space: use DC LOW level (-1.5V equivalent in normalized range)
             pulse.fill(-0.9); // ~-1.5V normalized to ±1.0V range
