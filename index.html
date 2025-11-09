@@ -487,8 +487,8 @@
                             <div style="font-size: 0.85em; color: #666; margin-top: 8px;">
                                 <div style="text-align: center; margin-bottom: 8px;">
                                     <strong>Color-coded by data section</strong> |
-                                    <span v-if="invertSignal">38kHz carrier on -1.5V / +1.5V spaces (INVERTED)</span>
-                                    <span v-else>38kHz carrier on +1.5V / -1.5V spaces (NORMAL)</span>
+                                    <span v-if="invertSignal">38kHz carrier: bursts @ -1.5V, spaces @ +1.5V (INVERTED)</span>
+                                    <span v-else>38kHz carrier: bursts @ +1.5V, spaces @ -1.5V (NORMAL)</span>
                                      | Zoom: {{ waveformZoom }}x
                                 </div>
                                 <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; font-size: 0.9em;">

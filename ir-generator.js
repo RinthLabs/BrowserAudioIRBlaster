@@ -25,11 +25,13 @@ class IRGenerator {
         const highLevel = this.invertSignal ? -0.9 : 0.9;   // Inverted: -1.5V, Normal: +1.5V
         const lowLevel = this.invertSignal ? 0.9 : -0.9;    // Inverted: +1.5V, Normal: -1.5V
 
+        // Always add 38kHz carrier wave to both bursts and spaces
+        const carrierPeriod = this.sampleRate / this.carrierFrequency;
+        const carrierAmplitude = 0.3; // Amplitude of the carrier wave
+
         if (modulated) {
-            // IR burst: DC offset with 38kHz carrier wave on top
-            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+            // IR burst: DC offset (HIGH) with 38kHz carrier wave on top
             const dcOffset = highLevel;
-            const carrierAmplitude = 0.3; // Amplitude of the carrier wave on top of DC
 
             for (let i = 0; i < samples; i++) {
                 const phase = (2 * Math.PI * i) / carrierPeriod;
@@ -37,8 +39,14 @@ class IRGenerator {
                 pulse[i] = dcOffset + carrier; // DC offset + AC carrier
             }
         } else {
-            // Space: use DC LOW level
-            pulse.fill(lowLevel);
+            // Space: DC offset (LOW) with 38kHz carrier wave on top
+            const dcOffset = lowLevel;
+
+            for (let i = 0; i < samples; i++) {
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const carrier = Math.sin(phase) * carrierAmplitude;
+                pulse[i] = dcOffset + carrier; // DC offset + AC carrier
+            }
         }
 
         return pulse;
