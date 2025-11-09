@@ -21,18 +21,12 @@ class IRGenerator {
         const pulse = new Float32Array(samples);
 
         if (modulated) {
-            const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const amplitude = 0.8; // Peak voltage (will swing from -0.8V to +0.8V)
-
-            for (let i = 0; i < samples; i++) {
-                // Generate 38kHz sine wave carrier (bipolar: -amplitude to +amplitude, centered at 0V)
-                // This is the proper AC signal for headphone jack IR transmission
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                pulse[i] = amplitude * Math.sin(phase);
-            }
+            // IR burst: use DC HIGH level (+1.5V equivalent in normalized range)
+            // The 38kHz carrier modulation may be added by external circuitry or the IR LED itself
+            pulse.fill(0.9); // ~1.5V normalized to ±1.0V range
         } else {
-            // Space (silence) - stay at 0V
-            pulse.fill(0);
+            // Space: use DC LOW level (-1.5V equivalent in normalized range)
+            pulse.fill(-0.9); // ~-1.5V normalized to ±1.0V range
         }
 
         return pulse;
