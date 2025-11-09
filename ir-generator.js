@@ -21,24 +21,23 @@ class IRGenerator {
         const pulse = new Float32Array(samples);
 
         // Inverted signal: bursts are NEGATIVE (-1.5V), spaces are POSITIVE (+1.5V)
-        // Carrier wave is always on the POSITIVE side (+1.5V = spaces)
+        // Carrier oscillates from LOW (-0.9V) to HIGH (+0.9V)
         const burstLevel = -0.9;   // -1.5V
         const spaceLevel = 0.9;    // +1.5V
 
         if (modulated) {
-            // This is an IR burst - flat DC at negative level (no carrier)
-            pulse.fill(burstLevel);
-        } else {
-            // This is a space - positive DC with 38kHz carrier on top
+            // This is an IR burst - 38kHz carrier oscillating from low to high
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const dcOffset = spaceLevel;
-            const carrierAmplitude = 0.3;
+            const carrierAmplitude = 0.9; // Full swing from -0.9V to +0.9V
 
             for (let i = 0; i < samples; i++) {
                 const phase = (2 * Math.PI * i) / carrierPeriod;
                 const carrier = Math.sin(phase) * carrierAmplitude;
-                pulse[i] = dcOffset + carrier;
+                pulse[i] = carrier; // Oscillates between -0.9 and +0.9
             }
+        } else {
+            // This is a space - positive DC, flat (no carrier)
+            pulse.fill(spaceLevel);
         }
 
         return pulse;
