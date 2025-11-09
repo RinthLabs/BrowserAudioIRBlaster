@@ -8,7 +8,6 @@ class IRGenerator {
         this.carrierFrequency = carrierFrequency * 1000; // Convert kHz to Hz
         this.sampleRate = 192000; // High sample rate for better quality
         this.dutyCycle = 0.33; // 33% duty cycle for IR carrier
-        this.invertSignal = true; // Signal inversion (can be changed)
     }
 
     /**
@@ -21,48 +20,24 @@ class IRGenerator {
         const samples = Math.floor((duration / 1000000) * this.sampleRate);
         const pulse = new Float32Array(samples);
 
-        // Normal mode: bursts are POSITIVE (+1.5V), spaces are NEGATIVE (-1.5V)
-        // Inverted mode: bursts are NEGATIVE (-1.5V), spaces are POSITIVE (+1.5V)
-        const burstLevel = this.invertSignal ? -0.9 : 0.9;   // Inverted: -1.5V, Normal: +1.5V
-        const spaceLevel = this.invertSignal ? 0.9 : -0.9;   // Inverted: +1.5V, Normal: -1.5V
-
-        // Carrier always goes on the POSITIVE voltage level
-        const positiveLevel = this.invertSignal ? spaceLevel : burstLevel;
-        const negativeLevel = this.invertSignal ? burstLevel : spaceLevel;
+        // Inverted signal: bursts are NEGATIVE (-1.5V), spaces are POSITIVE (+1.5V)
+        // Carrier wave is always on the POSITIVE side (+1.5V = spaces)
+        const burstLevel = -0.9;   // -1.5V
+        const spaceLevel = 0.9;    // +1.5V
 
         if (modulated) {
-            // This is an IR burst
-            if (this.invertSignal) {
-                // Inverted mode: burst at NEGATIVE level, NO carrier (carrier is on positive)
-                pulse.fill(negativeLevel);
-            } else {
-                // Normal mode: burst at POSITIVE level WITH carrier
-                const carrierPeriod = this.sampleRate / this.carrierFrequency;
-                const dcOffset = positiveLevel;
-                const carrierAmplitude = 0.3;
-
-                for (let i = 0; i < samples; i++) {
-                    const phase = (2 * Math.PI * i) / carrierPeriod;
-                    const carrier = Math.sin(phase) * carrierAmplitude;
-                    pulse[i] = dcOffset + carrier;
-                }
-            }
+            // This is an IR burst - flat DC at negative level (no carrier)
+            pulse.fill(burstLevel);
         } else {
-            // This is a space
-            if (this.invertSignal) {
-                // Inverted mode: space at POSITIVE level WITH carrier
-                const carrierPeriod = this.sampleRate / this.carrierFrequency;
-                const dcOffset = positiveLevel;
-                const carrierAmplitude = 0.3;
+            // This is a space - positive DC with 38kHz carrier on top
+            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+            const dcOffset = spaceLevel;
+            const carrierAmplitude = 0.3;
 
-                for (let i = 0; i < samples; i++) {
-                    const phase = (2 * Math.PI * i) / carrierPeriod;
-                    const carrier = Math.sin(phase) * carrierAmplitude;
-                    pulse[i] = dcOffset + carrier;
-                }
-            } else {
-                // Normal mode: space at NEGATIVE level, NO carrier
-                pulse.fill(negativeLevel);
+            for (let i = 0; i < samples; i++) {
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const carrier = Math.sin(phase) * carrierAmplitude;
+                pulse[i] = dcOffset + carrier;
             }
         }
 
