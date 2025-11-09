@@ -22,20 +22,16 @@ class IRGenerator {
 
         if (modulated) {
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onSamples = Math.floor(carrierPeriod * this.dutyCycle);
             const amplitude = 0.8;
 
             for (let i = 0; i < samples; i++) {
-                const carrierPosition = i % carrierPeriod;
-                // Create bipolar AC signal: oscillates between -amplitude and +amplitude
-                // This is proper for audio outputs which are AC-coupled
-                if (carrierPosition < onSamples) {
-                    // High phase: positive voltage
-                    pulse[i] = amplitude;
-                } else {
-                    // Low phase: negative voltage (creates proper AC waveform)
-                    pulse[i] = -amplitude;
-                }
+                // Generate 38kHz sine wave carrier (unipolar: 0V to +amplitude)
+                // This is the standard for IR transmission via audio output
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const sineWave = Math.sin(phase);
+
+                // Convert from bipolar (-1 to +1) to unipolar (0 to amplitude)
+                pulse[i] = ((sineWave + 1) / 2) * amplitude;
             }
         } else {
             // Space (silence) - stay at 0V

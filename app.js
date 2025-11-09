@@ -229,15 +229,15 @@ createApp({
             ctx.font = '10px Arial';
             ctx.lineWidth = 1;
 
-            const voltageRange = 1.6; // Typical headphone output voltage
-            const voltages = [voltageRange, voltageRange/2, 0, -voltageRange/2, -voltageRange];
+            const maxVoltage = 1.0; // Max voltage for IR signal (0V to ~0.8V + headroom)
+            const voltages = [maxVoltage, maxVoltage * 0.75, maxVoltage * 0.5, maxVoltage * 0.25, 0];
 
             voltages.forEach((voltage, i) => {
                 const y = margin.top + (plotHeight / 4) * i;
 
                 // Grid line
-                ctx.strokeStyle = i === 2 ? '#999' : '#e0e0e0';
-                if (i === 2) ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = i === 4 ? '#999' : '#e0e0e0'; // Emphasize 0V line at bottom
+                if (i === 4) ctx.setLineDash([5, 5]);
                 ctx.beginPath();
                 ctx.moveTo(margin.left, y);
                 ctx.lineTo(width - margin.right, y);
@@ -247,7 +247,7 @@ createApp({
                 // Voltage label
                 ctx.fillStyle = '#666';
                 ctx.textAlign = 'right';
-                ctx.fillText(voltage.toFixed(1) + 'V', margin.left - 5, y + 4);
+                ctx.fillText(voltage.toFixed(2) + 'V', margin.left - 5, y + 4);
             });
 
             // Draw X-axis time labels
@@ -281,19 +281,19 @@ createApp({
                 ctx.strokeStyle = section.color;
                 ctx.lineWidth = 1.5;
 
-                // Get min and max values in this pixel's range to show full AC waveform
-                let minVal = 0;
-                let maxVal = 0;
+                // Get min and max values in this pixel's range to show waveform envelope
+                let minVal = 1.0;
+                let maxVal = 0.0;
                 for (let i = 0; i < samplesPerPixel && sampleIndex + i < signal.length; i++) {
                     const sample = signal[sampleIndex + i];
                     minVal = Math.min(minVal, sample);
                     maxVal = Math.max(maxVal, sample);
                 }
 
-                // Convert to screen coordinates
-                const centerY = margin.top + plotHeight / 2;
-                const yMax = centerY - (maxVal * (plotHeight / 2));
-                const yMin = centerY - (minVal * (plotHeight / 2));
+                // Convert to screen coordinates (0V at bottom, maxVoltage at top)
+                const bottomY = margin.top + plotHeight; // 0V position
+                const yMax = bottomY - (maxVal * plotHeight); // Top of waveform
+                const yMin = bottomY - (minVal * plotHeight); // Bottom of waveform
 
                 const plotX = margin.left + x;
 
