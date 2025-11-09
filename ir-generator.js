@@ -21,31 +21,48 @@ class IRGenerator {
         const samples = Math.floor((duration / 1000000) * this.sampleRate);
         const pulse = new Float32Array(samples);
 
-        // Define HIGH and LOW levels, swap if inverted
-        const highLevel = this.invertSignal ? -0.9 : 0.9;   // Inverted: -1.5V, Normal: +1.5V
-        const lowLevel = this.invertSignal ? 0.9 : -0.9;    // Inverted: +1.5V, Normal: -1.5V
+        // Normal mode: bursts are POSITIVE (+1.5V), spaces are NEGATIVE (-1.5V)
+        // Inverted mode: bursts are NEGATIVE (-1.5V), spaces are POSITIVE (+1.5V)
+        const burstLevel = this.invertSignal ? -0.9 : 0.9;   // Inverted: -1.5V, Normal: +1.5V
+        const spaceLevel = this.invertSignal ? 0.9 : -0.9;   // Inverted: +1.5V, Normal: -1.5V
 
-        // Always add 38kHz carrier wave to both bursts and spaces
-        const carrierPeriod = this.sampleRate / this.carrierFrequency;
-        const carrierAmplitude = 0.3; // Amplitude of the carrier wave
+        // Carrier always goes on the POSITIVE voltage level
+        const positiveLevel = this.invertSignal ? spaceLevel : burstLevel;
+        const negativeLevel = this.invertSignal ? burstLevel : spaceLevel;
 
         if (modulated) {
-            // IR burst: DC offset (HIGH) with 38kHz carrier wave on top
-            const dcOffset = highLevel;
+            // This is an IR burst
+            if (this.invertSignal) {
+                // Inverted mode: burst at NEGATIVE level, NO carrier (carrier is on positive)
+                pulse.fill(negativeLevel);
+            } else {
+                // Normal mode: burst at POSITIVE level WITH carrier
+                const carrierPeriod = this.sampleRate / this.carrierFrequency;
+                const dcOffset = positiveLevel;
+                const carrierAmplitude = 0.3;
 
-            for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const carrier = Math.sin(phase) * carrierAmplitude;
-                pulse[i] = dcOffset + carrier; // DC offset + AC carrier
+                for (let i = 0; i < samples; i++) {
+                    const phase = (2 * Math.PI * i) / carrierPeriod;
+                    const carrier = Math.sin(phase) * carrierAmplitude;
+                    pulse[i] = dcOffset + carrier;
+                }
             }
         } else {
-            // Space: DC offset (LOW) with 38kHz carrier wave on top
-            const dcOffset = lowLevel;
+            // This is a space
+            if (this.invertSignal) {
+                // Inverted mode: space at POSITIVE level WITH carrier
+                const carrierPeriod = this.sampleRate / this.carrierFrequency;
+                const dcOffset = positiveLevel;
+                const carrierAmplitude = 0.3;
 
-            for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const carrier = Math.sin(phase) * carrierAmplitude;
-                pulse[i] = dcOffset + carrier; // DC offset + AC carrier
+                for (let i = 0; i < samples; i++) {
+                    const phase = (2 * Math.PI * i) / carrierPeriod;
+                    const carrier = Math.sin(phase) * carrierAmplitude;
+                    pulse[i] = dcOffset + carrier;
+                }
+            } else {
+                // Normal mode: space at NEGATIVE level, NO carrier
+                pulse.fill(negativeLevel);
             }
         }
 
@@ -88,11 +105,26 @@ class IRGenerator {
             }
         }
 
-        // Final burst
+        // Final stop burst
         segments.push(this.generatePulse(562.5, true));
 
-        // Add some silence at the end
-        segments.push(this.generatePulse(50000, false));
+        // Add gap before trailing signal (standard NEC protocol uses ~40ms gap before repeat)
+        const gapSamples1 = Math.floor((40000 / 1000000) * this.sampleRate);
+        const gap1 = new Float32Array(gapSamples1);
+        gap1.fill(0); // 0V silence during gap
+        segments.push(gap1);
+
+        // Add trailing "repeat ready" signal (9ms burst + 2.25ms space + 562.5µs burst)
+        // This indicates end of single transmission
+        segments.push(this.generatePulse(9000, true));  // 9ms AGC burst
+        segments.push(this.generatePulse(2250, false)); // 2.25ms space
+        segments.push(this.generatePulse(562.5, true)); // Stop burst
+
+        // Add final silence at the end (0V)
+        const silenceSamples = Math.floor((20000 / 1000000) * this.sampleRate);
+        const silence = new Float32Array(silenceSamples);
+        silence.fill(0); // True 0V silence
+        segments.push(silence);
 
         // Combine all segments
         const totalLength = segments.reduce((sum, seg) => sum + seg.length, 0);
