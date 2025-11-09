@@ -8,6 +8,7 @@ class IRGenerator {
         this.carrierFrequency = carrierFrequency * 1000; // Convert kHz to Hz
         this.sampleRate = 192000; // High sample rate for better quality
         this.dutyCycle = 0.33; // 33% duty cycle for IR carrier
+        this.invertSignal = true; // Signal inversion (can be changed)
     }
 
     /**
@@ -20,10 +21,14 @@ class IRGenerator {
         const samples = Math.floor((duration / 1000000) * this.sampleRate);
         const pulse = new Float32Array(samples);
 
+        // Define HIGH and LOW levels, swap if inverted
+        const highLevel = this.invertSignal ? -0.9 : 0.9;   // Inverted: -1.5V, Normal: +1.5V
+        const lowLevel = this.invertSignal ? 0.9 : -0.9;    // Inverted: +1.5V, Normal: -1.5V
+
         if (modulated) {
-            // IR burst: DC offset (+0.9 ≈ +1.5V) with 38kHz carrier wave on top
+            // IR burst: DC offset with 38kHz carrier wave on top
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const dcOffset = 0.9; // +1.5V DC level
+            const dcOffset = highLevel;
             const carrierAmplitude = 0.3; // Amplitude of the carrier wave on top of DC
 
             for (let i = 0; i < samples; i++) {
@@ -32,8 +37,8 @@ class IRGenerator {
                 pulse[i] = dcOffset + carrier; // DC offset + AC carrier
             }
         } else {
-            // Space: use DC LOW level (-1.5V equivalent in normalized range)
-            pulse.fill(-0.9); // ~-1.5V normalized to ±1.0V range
+            // Space: use DC LOW level
+            pulse.fill(lowLevel);
         }
 
         return pulse;

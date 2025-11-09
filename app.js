@@ -22,13 +22,15 @@ createApp({
             waveformOffset: 0,
             currentSignal: null,
             currentAddress: 0,
-            currentCommand: 0
+            currentCommand: 0,
+            invertSignal: true  // Default to inverted (bursts LOW, spaces HIGH)
         };
     },
 
     mounted() {
         // Initialize IR generator
         this.irGenerator = new IRGenerator(this.frequency);
+        this.irGenerator.invertSignal = this.invertSignal;
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
         // Initialize Materialize components
@@ -37,13 +39,30 @@ createApp({
         console.log('Browser Audio IR Blaster initialized');
         console.log('Sample rate:', this.irGenerator.sampleRate);
         console.log('Carrier frequency:', this.irGenerator.carrierFrequency / 1000, 'kHz');
+        console.log('Signal inversion:', this.invertSignal ? 'INVERTED' : 'NORMAL');
     },
 
     watch: {
         frequency(newFreq) {
             // Update IR generator when frequency changes
             this.irGenerator = new IRGenerator(newFreq);
+            this.irGenerator.invertSignal = this.invertSignal;
             console.log('Carrier frequency updated to:', newFreq, 'kHz');
+        },
+        invertSignal(newValue) {
+            // Update IR generator when inversion changes
+            this.irGenerator.invertSignal = newValue;
+            console.log('Signal inversion:', newValue ? 'INVERTED' : 'NORMAL');
+
+            // Regenerate current signal if one exists
+            if (this.currentSignal) {
+                this.generateAndPlay(
+                    (this.currentCommand << 16) | this.currentAddress |
+                    ((~this.currentCommand & 0xFF) << 24) |
+                    ((~this.currentAddress & 0xFF) << 8),
+                    this.lastCommand
+                );
+            }
         }
     },
 
