@@ -23,20 +23,20 @@ class IRGenerator {
 
         if (modulated) {
             // IR burst: 38kHz square wave with 33% duty cycle
-            // L and R are inverted to create voltage difference across LEDs
+            // L and R differential: voltage difference when ON, no difference when OFF
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
             const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // LED ON: L high, R low → voltage difference = 1.8V
+                    // LED ON: Create voltage difference (L high, R low)
                     pulseL[i] = 0.9;
                     pulseR[i] = -0.9;
                 } else {
-                    // LED OFF: L low, R high → voltage difference = -1.8V (reverse biased)
-                    pulseL[i] = -0.9;
-                    pulseR[i] = 0.9;
+                    // LED OFF: No voltage difference (both at 0V)
+                    pulseL[i] = 0;
+                    pulseR[i] = 0;
                 }
             }
         } else {
