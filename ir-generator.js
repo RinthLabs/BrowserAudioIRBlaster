@@ -22,35 +22,27 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz with 70% duty cycle - LED on longer than off
+            // IR burst: 38kHz with 33% duty cycle (NEC protocol standard)
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onDuration = carrierPeriod * 0.7; // 70% duty cycle
+            const onDuration = carrierPeriod * this.dutyCycle; // 33% duty cycle
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // LED ON: L positive, R negative
-                    pulseL[i] = 0.9;
-                    pulseR[i] = -0.9;
+                    // LED ON: L positive, R negative (full amplitude)
+                    pulseL[i] = 1.0;
+                    pulseR[i] = -1.0;
                 } else {
-                    // LED OFF: L negative, R positive (brief reverse bias)
-                    pulseL[i] = -0.9;
-                    pulseR[i] = 0.9;
+                    // LED OFF: Both channels at zero (no reverse bias needed)
+                    pulseL[i] = 0;
+                    pulseR[i] = 0;
                 }
             }
         } else {
-            // Space: Balanced 50% duty cycle with low amplitude (averages to minimal LED activation)
-            const carrierPeriod = this.sampleRate / this.carrierFrequency;
-
+            // Space: LED completely off (no signal)
             for (let i = 0; i < samples; i++) {
-                const positionInPeriod = i % carrierPeriod;
-                if (positionInPeriod < carrierPeriod / 2) {
-                    pulseL[i] = 0.05;
-                    pulseR[i] = -0.05;
-                } else {
-                    pulseL[i] = -0.05;
-                    pulseR[i] = 0.05;
-                }
+                pulseL[i] = 0;
+                pulseR[i] = 0;
             }
         }
 
@@ -61,94 +53,94 @@ class IRGenerator {
      * Generate NEC protocol command
      * @param {number} address - 8-bit address
      * @param {number} command - 8-bit command
+     * @param {number} repeatCount - Number of times to repeat the command (default 3 for reliability)
      * @returns {Float32Array} - Complete IR signal
      */
-    generateNECCommand(address, command) {
-        const segmentsL = [];
-        const segmentsR = [];
+    generateNECCommand(address, command, repeatCount = 3) {
+        const allSegmentsL = [];
+        const allSegmentsR = [];
 
-        // AGC burst: 9ms pulse + 4.5ms space
-        let pulse = this.generatePulse(9000, true);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
+        // Generate the command repeatCount times
+        for (let repeat = 0; repeat < repeatCount; repeat++) {
+            const segmentsL = [];
+            const segmentsR = [];
 
-        pulse = this.generatePulse(4500, false);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
+            // AGC burst: 9ms pulse + 4.5ms space
+            let pulse = this.generatePulse(9000, true);
+            segmentsL.push(pulse.left);
+            segmentsR.push(pulse.right);
 
-        // Data bits (32 bits total)
-        // Address + ~Address + Command + ~Command
-        const data = [
-            address,
-            (~address) & 0xFF,
-            command,
-            (~command) & 0xFF
-        ];
+            pulse = this.generatePulse(4500, false);
+            segmentsL.push(pulse.left);
+            segmentsR.push(pulse.right);
 
-        for (const byte of data) {
-            for (let bit = 0; bit < 8; bit++) {
-                const bitValue = (byte >> bit) & 1;
+            // Data bits (32 bits total)
+            // Address + ~Address + Command + ~Command
+            const data = [
+                address,
+                (~address) & 0xFF,
+                command,
+                (~command) & 0xFF
+            ];
 
-                // All bits start with 562.5µs pulse
-                pulse = this.generatePulse(562.5, true);
-                segmentsL.push(pulse.left);
-                segmentsR.push(pulse.right);
+            for (const byte of data) {
+                for (let bit = 0; bit < 8; bit++) {
+                    const bitValue = (byte >> bit) & 1;
 
-                // Logical '1': 1687.5µs space
-                // Logical '0': 562.5µs space
-                const spaceTime = bitValue ? 1687.5 : 562.5;
-                pulse = this.generatePulse(spaceTime, false);
-                segmentsL.push(pulse.left);
-                segmentsR.push(pulse.right);
+                    // All bits start with 562.5µs pulse
+                    pulse = this.generatePulse(562.5, true);
+                    segmentsL.push(pulse.left);
+                    segmentsR.push(pulse.right);
+
+                    // Logical '1': 1687.5µs space
+                    // Logical '0': 562.5µs space
+                    const spaceTime = bitValue ? 1687.5 : 562.5;
+                    pulse = this.generatePulse(spaceTime, false);
+                    segmentsL.push(pulse.left);
+                    segmentsR.push(pulse.right);
+                }
+            }
+
+            // Final stop burst
+            pulse = this.generatePulse(562.5, true);
+            segmentsL.push(pulse.left);
+            segmentsR.push(pulse.right);
+
+            // Add all segments from this command to the main array
+            allSegmentsL.push(...segmentsL);
+            allSegmentsR.push(...segmentsR);
+
+            // Add gap between repeats (40ms), except after the last repeat
+            if (repeat < repeatCount - 1) {
+                const gapSamples = Math.floor((40000 / 1000000) * this.sampleRate);
+                const gapL = new Float32Array(gapSamples);
+                const gapR = new Float32Array(gapSamples);
+                gapL.fill(0);
+                gapR.fill(0);
+                allSegmentsL.push(gapL);
+                allSegmentsR.push(gapR);
             }
         }
 
-        // Final stop burst
-        pulse = this.generatePulse(562.5, true);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
-
-        // Add gap before trailing signal (standard NEC protocol uses ~40ms gap before repeat)
-        const gapSamples1 = Math.floor((40000 / 1000000) * this.sampleRate);
-        const gap1L = new Float32Array(gapSamples1);
-        const gap1R = new Float32Array(gapSamples1);
-        gap1L.fill(0); // 0V silence during gap
-        gap1R.fill(0);
-        segmentsL.push(gap1L);
-        segmentsR.push(gap1R);
-
-        // Add trailing "repeat ready" signal (9ms burst + 2.25ms space + 562.5µs burst)
-        pulse = this.generatePulse(9000, true);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
-
-        pulse = this.generatePulse(2250, false);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
-
-        pulse = this.generatePulse(562.5, true);
-        segmentsL.push(pulse.left);
-        segmentsR.push(pulse.right);
-
-        // Add final silence at the end (0V)
-        const silenceSamples = Math.floor((20000 / 1000000) * this.sampleRate);
+        // Add final silence at the end (40ms)
+        const silenceSamples = Math.floor((40000 / 1000000) * this.sampleRate);
         const silenceL = new Float32Array(silenceSamples);
         const silenceR = new Float32Array(silenceSamples);
         silenceL.fill(0);
         silenceR.fill(0);
-        segmentsL.push(silenceL);
-        segmentsR.push(silenceR);
+        allSegmentsL.push(silenceL);
+        allSegmentsR.push(silenceR);
 
         // Combine all segments
-        const totalLength = segmentsL.reduce((sum, seg) => sum + seg.length, 0);
+        const totalLength = allSegmentsL.reduce((sum, seg) => sum + seg.length, 0);
         const signalL = new Float32Array(totalLength);
         const signalR = new Float32Array(totalLength);
 
         let offset = 0;
-        for (let i = 0; i < segmentsL.length; i++) {
-            signalL.set(segmentsL[i], offset);
-            signalR.set(segmentsR[i], offset);
-            offset += segmentsL[i].length;
+        for (let i = 0; i < allSegmentsL.length; i++) {
+            signalL.set(allSegmentsL[i], offset);
+            signalR.set(allSegmentsR[i], offset);
+            offset += allSegmentsL[i].length;
         }
 
         return { left: signalL, right: signalR };
