@@ -64,10 +64,10 @@ class IRGenerator {
      * Generate NEC protocol command
      * @param {number} address - 8-bit address
      * @param {number} command - 8-bit command
-     * @param {number} repeatCount - Number of times to repeat the command (default 3)
+     * @param {number} repeatCount - Number of times to repeat the command (default 5)
      * @returns {Float32Array} - Complete IR signal
      */
-    generateNECCommand(address, command, repeatCount = 3) {
+    generateNECCommand(address, command, repeatCount = 5) {
         const allSegmentsL = [];
         const allSegmentsR = [];
 
