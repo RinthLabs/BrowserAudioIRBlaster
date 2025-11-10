@@ -22,25 +22,25 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz square wave with 33% duty cycle
-            // L and R differential: voltage difference when ON, no difference when OFF
+            // IR burst: 38kHz square wave with 33% duty cycle on L channel
+            // R channel stays at 0V, creating voltage difference across LEDs
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
             const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // LED ON: Create voltage difference (L high, R low)
+                    // LED ON: L high, R at 0V → voltage difference
                     pulseL[i] = 0.9;
-                    pulseR[i] = -0.9;
+                    pulseR[i] = 0;
                 } else {
-                    // LED OFF: No voltage difference (both at 0V)
+                    // LED OFF: L at 0V, R at 0V → no voltage difference
                     pulseL[i] = 0;
                     pulseR[i] = 0;
                 }
             }
         } else {
-            // Space: Both channels at same level → no voltage difference → LED off
+            // Space: Both channels at 0V → no voltage difference → LED off
             pulseL.fill(0);
             pulseR.fill(0);
         }
