@@ -22,23 +22,27 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: Continuous 38kHz carrier for the entire burst duration
-            // L and R are 180° out of phase (maximum voltage difference across LED)
+            // IR burst: 38kHz carrier with DC offset so LED always conducts in forward direction
+            // L has AC + positive DC, R has AC + negative DC
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
+            const acAmplitude = 0.45; // AC component amplitude
+            const dcOffset = 0.45;    // DC offset (total swing 0 to 0.9V)
 
             for (let i = 0; i < samples; i++) {
                 const phase = (2 * Math.PI * i) / carrierPeriod;
-                // L and R are opposite: when L is high, R is low and vice versa
-                pulseL[i] = Math.sin(phase) * 0.9;
-                pulseR[i] = -Math.sin(phase) * 0.9;
+                const ac = Math.sin(phase) * acAmplitude;
+                // L: DC offset + AC, R: -DC offset - AC
+                // This creates voltage difference that oscillates from 0 to 1.8V (always positive)
+                pulseL[i] = dcOffset + ac;
+                pulseR[i] = -dcOffset - ac;
             }
         } else {
-            // Space: L and R in phase (zero voltage difference across LED)
+            // Space: L and R in phase with minimal amplitude
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
 
             for (let i = 0; i < samples; i++) {
                 const phase = (2 * Math.PI * i) / carrierPeriod;
-                const val = Math.sin(phase) * 0.1;
+                const val = Math.sin(phase) * 0.05;
                 pulseL[i] = val;
                 pulseR[i] = val; // Same phase = no voltage difference
             }
