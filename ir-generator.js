@@ -22,29 +22,35 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz square wave - L and R are opposite polarity
-            // This creates maximum voltage difference across LEDs
+            // IR burst: 38kHz modulation - pulse at 33% duty cycle
+            // LED conducts only when L > R, so alternate between large difference and small difference
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
+            const onDuration = carrierPeriod * this.dutyCycle;
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // Pulse: L positive, R negative → current flows through LED
+                    // LED ON: Large positive voltage difference
                     pulseL[i] = 0.9;
                     pulseR[i] = -0.9;
                 } else {
-                    // Between pulses: L negative, R positive → reverse bias (no current)
-                    pulseL[i] = -0.9;
-                    pulseR[i] = 0.9;
+                    // LED OFF: Small in-phase signal (minimal voltage difference)
+                    const phase = (2 * Math.PI * i) / carrierPeriod;
+                    const val = Math.sin(phase) * 0.1;
+                    pulseL[i] = val;
+                    pulseR[i] = val;
                 }
             }
         } else {
-            // Space: Both channels at same DC level → no voltage difference
-            // Using a constant non-zero value to keep the AC coupling charged
-            const dcLevel = 0.5;
-            pulseL.fill(dcLevel);
-            pulseR.fill(dcLevel);
+            // Space: Small in-phase signal (keeps AC coupling active, minimal LED activation)
+            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+
+            for (let i = 0; i < samples; i++) {
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const val = Math.sin(phase) * 0.1;
+                pulseL[i] = val;
+                pulseR[i] = val;
+            }
         }
 
         return { left: pulseL, right: pulseR };
