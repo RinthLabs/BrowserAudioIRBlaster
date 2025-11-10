@@ -18,24 +18,34 @@ class IRGenerator {
      */
     generatePulse(duration, modulated = true) {
         const samples = Math.floor((duration / 1000000) * this.sampleRate);
-        const pulse = new Float32Array(samples);
+        const pulseL = new Float32Array(samples);
+        const pulseR = new Float32Array(samples);
 
         if (modulated) {
             // IR burst: 38kHz square wave with 33% duty cycle
+            // L and R are inverted to create voltage difference across LEDs
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
             const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
-                // Square wave: +0.9V when ON, -0.9V when OFF
-                pulse[i] = positionInPeriod < onDuration ? 0.9 : -0.9;
+                if (positionInPeriod < onDuration) {
+                    // LED ON: L high, R low → voltage difference = 1.8V
+                    pulseL[i] = 0.9;
+                    pulseR[i] = -0.9;
+                } else {
+                    // LED OFF: L low, R high → voltage difference = -1.8V (reverse biased)
+                    pulseL[i] = -0.9;
+                    pulseR[i] = 0.9;
+                }
             }
         } else {
-            // Space: Flat DC at -0.9V (capacitor will block this)
-            pulse.fill(-0.9);
+            // Space: Both channels at same level → no voltage difference → LED off
+            pulseL.fill(0);
+            pulseR.fill(0);
         }
 
-        return pulse;
+        return { left: pulseL, right: pulseR };
     }
 
     /**
@@ -45,11 +55,17 @@ class IRGenerator {
      * @returns {Float32Array} - Complete IR signal
      */
     generateNECCommand(address, command) {
-        const segments = [];
+        const segmentsL = [];
+        const segmentsR = [];
 
         // AGC burst: 9ms pulse + 4.5ms space
-        segments.push(this.generatePulse(9000, true));
-        segments.push(this.generatePulse(4500, false));
+        let pulse = this.generatePulse(9000, true);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
+
+        pulse = this.generatePulse(4500, false);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
 
         // Data bits (32 bits total)
         // Address + ~Address + Command + ~Command
@@ -65,58 +81,80 @@ class IRGenerator {
                 const bitValue = (byte >> bit) & 1;
 
                 // All bits start with 562.5µs pulse
-                segments.push(this.generatePulse(562.5, true));
+                pulse = this.generatePulse(562.5, true);
+                segmentsL.push(pulse.left);
+                segmentsR.push(pulse.right);
 
                 // Logical '1': 1687.5µs space
                 // Logical '0': 562.5µs space
                 const spaceTime = bitValue ? 1687.5 : 562.5;
-                segments.push(this.generatePulse(spaceTime, false));
+                pulse = this.generatePulse(spaceTime, false);
+                segmentsL.push(pulse.left);
+                segmentsR.push(pulse.right);
             }
         }
 
         // Final stop burst
-        segments.push(this.generatePulse(562.5, true));
+        pulse = this.generatePulse(562.5, true);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
 
         // Add gap before trailing signal (standard NEC protocol uses ~40ms gap before repeat)
         const gapSamples1 = Math.floor((40000 / 1000000) * this.sampleRate);
-        const gap1 = new Float32Array(gapSamples1);
-        gap1.fill(0); // 0V silence during gap
-        segments.push(gap1);
+        const gap1L = new Float32Array(gapSamples1);
+        const gap1R = new Float32Array(gapSamples1);
+        gap1L.fill(0); // 0V silence during gap
+        gap1R.fill(0);
+        segmentsL.push(gap1L);
+        segmentsR.push(gap1R);
 
         // Add trailing "repeat ready" signal (9ms burst + 2.25ms space + 562.5µs burst)
-        // This indicates end of single transmission
-        segments.push(this.generatePulse(9000, true));  // 9ms AGC burst
-        segments.push(this.generatePulse(2250, false)); // 2.25ms space
-        segments.push(this.generatePulse(562.5, true)); // Stop burst
+        pulse = this.generatePulse(9000, true);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
+
+        pulse = this.generatePulse(2250, false);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
+
+        pulse = this.generatePulse(562.5, true);
+        segmentsL.push(pulse.left);
+        segmentsR.push(pulse.right);
 
         // Add final silence at the end (0V)
         const silenceSamples = Math.floor((20000 / 1000000) * this.sampleRate);
-        const silence = new Float32Array(silenceSamples);
-        silence.fill(0); // True 0V silence
-        segments.push(silence);
+        const silenceL = new Float32Array(silenceSamples);
+        const silenceR = new Float32Array(silenceSamples);
+        silenceL.fill(0);
+        silenceR.fill(0);
+        segmentsL.push(silenceL);
+        segmentsR.push(silenceR);
 
         // Combine all segments
-        const totalLength = segments.reduce((sum, seg) => sum + seg.length, 0);
-        const signal = new Float32Array(totalLength);
+        const totalLength = segmentsL.reduce((sum, seg) => sum + seg.length, 0);
+        const signalL = new Float32Array(totalLength);
+        const signalR = new Float32Array(totalLength);
 
         let offset = 0;
-        for (const segment of segments) {
-            signal.set(segment, offset);
-            offset += segment.length;
+        for (let i = 0; i < segmentsL.length; i++) {
+            signalL.set(segmentsL[i], offset);
+            signalR.set(segmentsR[i], offset);
+            offset += segmentsL[i].length;
         }
 
-        return signal;
+        return { left: signalL, right: signalR };
     }
 
     /**
      * Generate audio buffer from IR signal
-     * @param {Float32Array} signal - IR signal samples
+     * @param {Object} signal - IR signal samples with left and right channels
      * @returns {AudioBuffer} - Web Audio API buffer
      */
     createAudioBuffer(signal) {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const buffer = audioContext.createBuffer(1, signal.length, this.sampleRate);
-        buffer.getChannelData(0).set(signal);
+        const buffer = audioContext.createBuffer(2, signal.left.length, this.sampleRate);
+        buffer.getChannelData(0).set(signal.left);
+        buffer.getChannelData(1).set(signal.right);
         return buffer;
     }
 
@@ -158,7 +196,22 @@ class IRGenerator {
         writeString(36, 'data');
         view.setUint32(40, length, true);
 
-        floatTo16BitPCM(view, 44, buffer.getChannelData(0));
+        // Interleave stereo channels
+        if (buffer.numberOfChannels === 2) {
+            const left = buffer.getChannelData(0);
+            const right = buffer.getChannelData(1);
+            let offset = 44;
+            for (let i = 0; i < left.length; i++) {
+                const sampleL = Math.max(-1, Math.min(1, left[i]));
+                const sampleR = Math.max(-1, Math.min(1, right[i]));
+                view.setInt16(offset, sampleL < 0 ? sampleL * 0x8000 : sampleL * 0x7FFF, true);
+                offset += 2;
+                view.setInt16(offset, sampleR < 0 ? sampleR * 0x8000 : sampleR * 0x7FFF, true);
+                offset += 2;
+            }
+        } else {
+            floatTo16BitPCM(view, 44, buffer.getChannelData(0));
+        }
 
         return new Blob([arrayBuffer], { type: 'audio/wav' });
     }

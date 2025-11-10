@@ -172,8 +172,8 @@ createApp({
                 });
             });
 
-            // Store signal data for visualization
-            this.currentSignal = signal;
+            // Store signal data for visualization (use left channel)
+            this.currentSignal = signal.left;
             this.currentAddress = address;
             this.currentCommand = command;
             this.waveformZoom = 1;
