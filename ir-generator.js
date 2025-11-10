@@ -20,23 +20,19 @@ class IRGenerator {
         const samples = Math.floor((duration / 1000000) * this.sampleRate);
         const pulse = new Float32Array(samples);
 
-        // Bursts: Flat -0.9V
-        // Spaces: 38kHz carrier oscillating from -0.9V to +0.9V
-        const burstLevel = -0.9;   // -1.5V
-
         if (modulated) {
-            // This is an IR burst - flat DC at negative level
-            pulse.fill(burstLevel);
-        } else {
-            // This is a space - 38kHz carrier oscillating from low to high
+            // IR burst: 38kHz square wave with 33% duty cycle
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const carrierAmplitude = 0.9; // Full swing from -0.9V to +0.9V
+            const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
 
             for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const carrier = Math.sin(phase) * carrierAmplitude;
-                pulse[i] = carrier; // Oscillates between -0.9 and +0.9
+                const positionInPeriod = i % carrierPeriod;
+                // Square wave: +0.9V when ON, -0.9V when OFF
+                pulse[i] = positionInPeriod < onDuration ? 0.9 : -0.9;
             }
+        } else {
+            // Space: Flat DC at -0.9V (capacitor will block this)
+            pulse.fill(-0.9);
         }
 
         return pulse;
