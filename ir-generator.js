@@ -22,27 +22,33 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz square wave with 33% duty cycle on L channel
-            // R channel stays at 0V, creating voltage difference across LEDs
+            // IR burst: 38kHz square wave - L and R are opposite polarity
+            // This creates maximum voltage difference across LEDs
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
             const onDuration = carrierPeriod * this.dutyCycle; // 33% of period
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // LED ON: L high, R at 0V → voltage difference
+                    // Pulse: L positive, R negative → current flows through LED
                     pulseL[i] = 0.9;
-                    pulseR[i] = 0;
+                    pulseR[i] = -0.9;
                 } else {
-                    // LED OFF: L at 0V, R at 0V → no voltage difference
-                    pulseL[i] = 0;
-                    pulseR[i] = 0;
+                    // Between pulses: L negative, R positive → reverse bias (no current)
+                    pulseL[i] = -0.9;
+                    pulseR[i] = 0.9;
                 }
             }
         } else {
-            // Space: Both channels at 0V → no voltage difference → LED off
-            pulseL.fill(0);
-            pulseR.fill(0);
+            // Space: Keep both channels oscillating in phase (no voltage difference)
+            // OR use small amplitude that cancels out
+            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+            for (let i = 0; i < samples; i++) {
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                const value = Math.sin(phase) * 0.1; // Small in-phase signal
+                pulseL[i] = value;
+                pulseR[i] = value;
+            }
         }
 
         return { left: pulseL, right: pulseR };
