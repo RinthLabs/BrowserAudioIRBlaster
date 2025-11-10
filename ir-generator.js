@@ -22,9 +22,9 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz with 80% duty cycle - LED on longer than off
+            // IR burst: 38kHz with 70% duty cycle - LED on longer than off
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onDuration = carrierPeriod * 0.8; // 80% duty cycle
+            const onDuration = carrierPeriod * 0.7; // 70% duty cycle
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
