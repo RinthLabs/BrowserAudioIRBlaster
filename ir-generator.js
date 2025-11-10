@@ -8,6 +8,7 @@ class IRGenerator {
         this.carrierFrequency = carrierFrequency * 1000; // Convert kHz to Hz
         this.sampleRate = 192000; // High sample rate for better quality
         this.dutyCycle = 0.33; // 33% duty cycle for IR carrier
+        this.timingCompensation = 1.035; // Compensate for iOS audio resampling (~3.5% slower)
     }
 
     /**
@@ -17,32 +18,42 @@ class IRGenerator {
      * @returns {Float32Array} - Audio samples
      */
     generatePulse(duration, modulated = true) {
-        const samples = Math.floor((duration / 1000000) * this.sampleRate);
+        // Apply timing compensation to account for iOS audio resampling
+        const compensatedDuration = duration * this.timingCompensation;
+        const samples = Math.floor((compensatedDuration / 1000000) * this.sampleRate);
         const pulseL = new Float32Array(samples);
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz with 33% duty cycle (NEC protocol standard)
+            // IR burst: 38kHz with 70% duty cycle - LED on longer than off
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onDuration = carrierPeriod * this.dutyCycle; // 33% duty cycle
+            const onDuration = carrierPeriod * 0.7; // 70% duty cycle
 
             for (let i = 0; i < samples; i++) {
                 const positionInPeriod = i % carrierPeriod;
                 if (positionInPeriod < onDuration) {
-                    // LED ON: L positive, R negative (full amplitude)
-                    pulseL[i] = 1.0;
-                    pulseR[i] = -1.0;
+                    // LED ON: L positive, R negative
+                    pulseL[i] = 0.9;
+                    pulseR[i] = -0.9;
                 } else {
-                    // LED OFF: Both channels at zero (no reverse bias needed)
-                    pulseL[i] = 0;
-                    pulseR[i] = 0;
+                    // LED OFF: L negative, R positive (brief reverse bias)
+                    pulseL[i] = -0.9;
+                    pulseR[i] = 0.9;
                 }
             }
         } else {
-            // Space: LED completely off (no signal)
+            // Space: Balanced 50% duty cycle with low amplitude (averages to minimal LED activation)
+            const carrierPeriod = this.sampleRate / this.carrierFrequency;
+
             for (let i = 0; i < samples; i++) {
-                pulseL[i] = 0;
-                pulseR[i] = 0;
+                const positionInPeriod = i % carrierPeriod;
+                if (positionInPeriod < carrierPeriod / 2) {
+                    pulseL[i] = 0.05;
+                    pulseR[i] = -0.05;
+                } else {
+                    pulseL[i] = -0.05;
+                    pulseR[i] = 0.05;
+                }
             }
         }
 
@@ -53,10 +64,10 @@ class IRGenerator {
      * Generate NEC protocol command
      * @param {number} address - 8-bit address
      * @param {number} command - 8-bit command
-     * @param {number} repeatCount - Number of times to repeat the command (default 3 for reliability)
+     * @param {number} repeatCount - Number of times to repeat the command (default 1)
      * @returns {Float32Array} - Complete IR signal
      */
-    generateNECCommand(address, command, repeatCount = 3) {
+    generateNECCommand(address, command, repeatCount = 1) {
         const allSegmentsL = [];
         const allSegmentsR = [];
 
