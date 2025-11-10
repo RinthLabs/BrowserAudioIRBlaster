@@ -64,12 +64,22 @@ class IRGenerator {
      * Generate NEC protocol command
      * @param {number} address - 8-bit address
      * @param {number} command - 8-bit command
-     * @param {number} repeatCount - Number of times to repeat the command (default 1)
+     * @param {number} repeatCount - Number of times to repeat the command (default 2)
      * @returns {Float32Array} - Complete IR signal
      */
-    generateNECCommand(address, command, repeatCount = 1) {
+    generateNECCommand(address, command, repeatCount = 2) {
         const allSegmentsL = [];
         const allSegmentsR = [];
+
+        // Add 50ms of silence at the very beginning to let audio system stabilize
+        // This prevents startup artifacts from corrupting the AGC burst
+        const leadingSilenceSamples = Math.floor((50000 / 1000000) * this.sampleRate);
+        const leadingSilenceL = new Float32Array(leadingSilenceSamples);
+        const leadingSilenceR = new Float32Array(leadingSilenceSamples);
+        leadingSilenceL.fill(0);
+        leadingSilenceR.fill(0);
+        allSegmentsL.push(leadingSilenceL);
+        allSegmentsR.push(leadingSilenceR);
 
         // Generate the command repeatCount times
         for (let repeat = 0; repeat < repeatCount; repeat++) {
