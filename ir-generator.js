@@ -22,29 +22,35 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz carrier with DC offset so LED always conducts in forward direction
-            // L has AC + positive DC, R has AC + negative DC
+            // IR burst: 38kHz with 80% duty cycle - LED on longer than off
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const acAmplitude = 0.45; // AC component amplitude
-            const dcOffset = 0.45;    // DC offset (total swing 0 to 0.9V)
+            const onDuration = carrierPeriod * 0.8; // 80% duty cycle
 
             for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const ac = Math.sin(phase) * acAmplitude;
-                // L: DC offset + AC, R: -DC offset - AC
-                // This creates voltage difference that oscillates from 0 to 1.8V (always positive)
-                pulseL[i] = dcOffset + ac;
-                pulseR[i] = -dcOffset - ac;
+                const positionInPeriod = i % carrierPeriod;
+                if (positionInPeriod < onDuration) {
+                    // LED ON: L positive, R negative
+                    pulseL[i] = 0.9;
+                    pulseR[i] = -0.9;
+                } else {
+                    // LED OFF: L negative, R positive (brief reverse bias)
+                    pulseL[i] = -0.9;
+                    pulseR[i] = 0.9;
+                }
             }
         } else {
-            // Space: L and R in phase with minimal amplitude
+            // Space: Balanced 50% duty cycle with low amplitude (averages to minimal LED activation)
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
 
             for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const val = Math.sin(phase) * 0.05;
-                pulseL[i] = val;
-                pulseR[i] = val; // Same phase = no voltage difference
+                const positionInPeriod = i % carrierPeriod;
+                if (positionInPeriod < carrierPeriod / 2) {
+                    pulseL[i] = 0.05;
+                    pulseR[i] = -0.05;
+                } else {
+                    pulseL[i] = -0.05;
+                    pulseR[i] = 0.05;
+                }
             }
         }
 
