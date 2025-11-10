@@ -22,34 +22,25 @@ class IRGenerator {
         const pulseR = new Float32Array(samples);
 
         if (modulated) {
-            // IR burst: 38kHz modulation - pulse at 33% duty cycle
-            // LED conducts only when L > R, so alternate between large difference and small difference
+            // IR burst: Continuous 38kHz carrier for the entire burst duration
+            // L and R are 180° out of phase (maximum voltage difference across LED)
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            const onDuration = carrierPeriod * this.dutyCycle;
 
             for (let i = 0; i < samples; i++) {
-                const positionInPeriod = i % carrierPeriod;
-                if (positionInPeriod < onDuration) {
-                    // LED ON: Large positive voltage difference
-                    pulseL[i] = 0.9;
-                    pulseR[i] = -0.9;
-                } else {
-                    // LED OFF: Small in-phase signal (minimal voltage difference)
-                    const phase = (2 * Math.PI * i) / carrierPeriod;
-                    const val = Math.sin(phase) * 0.1;
-                    pulseL[i] = val;
-                    pulseR[i] = val;
-                }
+                const phase = (2 * Math.PI * i) / carrierPeriod;
+                // L and R are opposite: when L is high, R is low and vice versa
+                pulseL[i] = Math.sin(phase) * 0.9;
+                pulseR[i] = -Math.sin(phase) * 0.9;
             }
         } else {
-            // Space: Small in-phase signal (keeps AC coupling active, minimal LED activation)
+            // Space: L and R in phase (zero voltage difference across LED)
             const carrierPeriod = this.sampleRate / this.carrierFrequency;
 
             for (let i = 0; i < samples; i++) {
                 const phase = (2 * Math.PI * i) / carrierPeriod;
                 const val = Math.sin(phase) * 0.1;
                 pulseL[i] = val;
-                pulseR[i] = val;
+                pulseR[i] = val; // Same phase = no voltage difference
             }
         }
 
