@@ -40,15 +40,11 @@ class IRGenerator {
                 }
             }
         } else {
-            // Space: Keep both channels oscillating in phase (no voltage difference)
-            // OR use small amplitude that cancels out
-            const carrierPeriod = this.sampleRate / this.carrierFrequency;
-            for (let i = 0; i < samples; i++) {
-                const phase = (2 * Math.PI * i) / carrierPeriod;
-                const value = Math.sin(phase) * 0.1; // Small in-phase signal
-                pulseL[i] = value;
-                pulseR[i] = value;
-            }
+            // Space: Both channels at same DC level → no voltage difference
+            // Using a constant non-zero value to keep the AC coupling charged
+            const dcLevel = 0.5;
+            pulseL.fill(dcLevel);
+            pulseR.fill(dcLevel);
         }
 
         return { left: pulseL, right: pulseR };
