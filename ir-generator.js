@@ -64,22 +64,37 @@ class IRGenerator {
      * Generate NEC protocol command
      * @param {number} address - 8-bit address
      * @param {number} command - 8-bit command
-     * @param {number} repeatCount - Number of times to repeat the command (default 2)
+     * @param {number} repeatCount - Number of times to repeat the command (default 3)
      * @returns {Float32Array} - Complete IR signal
      */
-    generateNECCommand(address, command, repeatCount = 2) {
+    generateNECCommand(address, command, repeatCount = 3) {
         const allSegmentsL = [];
         const allSegmentsR = [];
 
-        // Add 50ms of silence at the very beginning to let audio system stabilize
+        // Add 100ms of silence at the very beginning to let audio system stabilize
         // This prevents startup artifacts from corrupting the AGC burst
-        const leadingSilenceSamples = Math.floor((50000 / 1000000) * this.sampleRate);
+        const leadingSilenceSamples = Math.floor((100000 / 1000000) * this.sampleRate);
         const leadingSilenceL = new Float32Array(leadingSilenceSamples);
         const leadingSilenceR = new Float32Array(leadingSilenceSamples);
         leadingSilenceL.fill(0);
         leadingSilenceR.fill(0);
         allSegmentsL.push(leadingSilenceL);
         allSegmentsR.push(leadingSilenceR);
+
+        // Add a "warm-up" pulse to stabilize the audio amplifier
+        // A brief carrier burst helps iOS audio processing lock on before the real signal
+        const warmupPulse = this.generatePulse(5000, true); // 5ms warmup burst
+        allSegmentsL.push(warmupPulse.left);
+        allSegmentsR.push(warmupPulse.right);
+
+        // Short gap after warmup
+        const warmupGapSamples = Math.floor((10000 / 1000000) * this.sampleRate);
+        const warmupGapL = new Float32Array(warmupGapSamples);
+        const warmupGapR = new Float32Array(warmupGapSamples);
+        warmupGapL.fill(0);
+        warmupGapR.fill(0);
+        allSegmentsL.push(warmupGapL);
+        allSegmentsR.push(warmupGapR);
 
         // Generate the command repeatCount times
         for (let repeat = 0; repeat < repeatCount; repeat++) {
